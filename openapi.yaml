@@ -1,0 +1,376 @@
+openapi: 3.0.3
+info:
+  title: Kaiju Registry API
+  description: |
+    A registry of known kaiju, their classifications, and reported sightings
+    across the globe. Built as a sample API for demonstrating Kong Konnect
+    platform capabilities.
+  version: 1.0.0
+  contact:
+    name: Kong Inc.
+    url: https://konghq.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: https://api.kaiju-registry.example.com/v1
+    description: Production
+  - url: https://staging-api.kaiju-registry.example.com/v1
+    description: Staging
+
+tags:
+  - name: Kaiju
+    description: Giant monster records
+  - name: Sightings
+    description: Reported kaiju sightings
+
+paths:
+  /kaiju:
+    get:
+      operationId: listKaiju
+      summary: List all kaiju
+      description: Returns a paginated list of all known kaiju in the registry.
+      tags:
+        - Kaiju
+      parameters:
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/PageNumber"
+        - name: threat_level
+          in: query
+          description: Filter by threat level.
+          required: false
+          schema:
+            $ref: "#/components/schemas/ThreatLevel"
+      responses:
+        "200":
+          description: A paginated list of kaiju.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - pagination
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Kaiju"
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+              example:
+                data:
+                  - id: "k-001"
+                    name: Goraxus
+                    species: Mega Primate
+                    height_meters: 102
+                    weight_tonnes: 58000
+                    threat_level: omega
+                    first_seen: "1954-11-03"
+                    status: active
+                  - id: "k-002"
+                    name: Tidestrider
+                    species: Leviathan
+                    height_meters: 78
+                    weight_tonnes: 42000
+                    threat_level: gamma
+                    first_seen: "1998-05-20"
+                    status: dormant
+                pagination:
+                  page: 1
+                  page_size: 10
+                  total_count: 2
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /kaiju/{kaijuId}:
+    get:
+      operationId: getKaiju
+      summary: Get a kaiju by ID
+      description: Returns the full record of a single kaiju.
+      tags:
+        - Kaiju
+      parameters:
+        - $ref: "#/components/parameters/KaijuId"
+      responses:
+        "200":
+          description: A single kaiju record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Kaiju"
+              example:
+                id: "k-001"
+                name: Goraxus
+                species: Mega Primate
+                height_meters: 102
+                weight_tonnes: 58000
+                threat_level: omega
+                first_seen: "1954-11-03"
+                status: active
+                description: >-
+                  A colossal primate first observed near Skull Island.
+                  Known for territorial behavior and extraordinary
+                  climbing ability.
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /kaiju/{kaijuId}/sightings:
+    get:
+      operationId: listSightings
+      summary: List sightings for a kaiju
+      description: Returns a paginated list of reported sightings for a specific kaiju.
+      tags:
+        - Sightings
+      parameters:
+        - $ref: "#/components/parameters/KaijuId"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/PageNumber"
+      responses:
+        "200":
+          description: A paginated list of sightings.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - pagination
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Sighting"
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+              example:
+                data:
+                  - id: "s-1001"
+                    kaiju_id: "k-001"
+                    location:
+                      latitude: 35.6762
+                      longitude: 139.6503
+                      city: Tokyo
+                      country: Japan
+                    reported_at: "2024-08-15T14:30:00Z"
+                    confirmed: true
+                    notes: Emerged from Tokyo Bay at dawn. Headed northwest.
+                  - id: "s-1002"
+                    kaiju_id: "k-001"
+                    location:
+                      latitude: 37.7749
+                      longitude: -122.4194
+                      city: San Francisco
+                      country: United States
+                    reported_at: "2025-01-10T08:15:00Z"
+                    confirmed: false
+                    notes: Unconfirmed sonar contact beneath the Golden Gate.
+                pagination:
+                  page: 1
+                  page_size: 10
+                  total_count: 2
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  parameters:
+    KaijuId:
+      name: kaijuId
+      in: path
+      required: true
+      description: Unique identifier of the kaiju.
+      schema:
+        type: string
+        example: k-001
+    PageSize:
+      name: page_size
+      in: query
+      required: false
+      description: Number of results per page.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+    PageNumber:
+      name: page
+      in: query
+      required: false
+      description: Page number to retrieve.
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+  schemas:
+    ThreatLevel:
+      type: string
+      description: Classification of the kaiju's threat to human civilization.
+      enum:
+        - alpha
+        - beta
+        - gamma
+        - omega
+
+    Kaiju:
+      type: object
+      required:
+        - id
+        - name
+        - species
+        - height_meters
+        - weight_tonnes
+        - threat_level
+        - first_seen
+        - status
+      properties:
+        id:
+          type: string
+          description: Unique identifier.
+          example: k-001
+        name:
+          type: string
+          description: Common name of the kaiju.
+          example: Goraxus
+        species:
+          type: string
+          description: Scientific or colloquial species classification.
+          example: Mega Primate
+        height_meters:
+          type: number
+          format: double
+          description: Standing height in meters.
+          example: 102
+        weight_tonnes:
+          type: number
+          format: double
+          description: Estimated mass in metric tonnes.
+          example: 58000
+        threat_level:
+          $ref: "#/components/schemas/ThreatLevel"
+        first_seen:
+          type: string
+          format: date
+          description: Date of first confirmed sighting.
+          example: "1954-11-03"
+        status:
+          type: string
+          description: Current known status.
+          enum:
+            - active
+            - dormant
+            - neutralized
+            - unknown
+          example: active
+        description:
+          type: string
+          description: Free-text summary of the kaiju.
+          example: >-
+            A colossal primate first observed near Skull Island.
+
+    Sighting:
+      type: object
+      required:
+        - id
+        - kaiju_id
+        - location
+        - reported_at
+        - confirmed
+      properties:
+        id:
+          type: string
+          description: Unique sighting identifier.
+          example: s-1001
+        kaiju_id:
+          type: string
+          description: ID of the kaiju that was sighted.
+          example: k-001
+        location:
+          $ref: "#/components/schemas/Location"
+        reported_at:
+          type: string
+          format: date-time
+          description: Timestamp of the reported sighting.
+          example: "2024-08-15T14:30:00Z"
+        confirmed:
+          type: boolean
+          description: Whether the sighting has been verified.
+          example: true
+        notes:
+          type: string
+          description: Observer notes or additional context.
+          example: Emerged from Tokyo Bay at dawn.
+
+    Location:
+      type: object
+      required:
+        - latitude
+        - longitude
+      properties:
+        latitude:
+          type: number
+          format: double
+          example: 35.6762
+        longitude:
+          type: number
+          format: double
+          example: 139.6503
+        city:
+          type: string
+          example: Tokyo
+        country:
+          type: string
+          example: Japan
+
+    Pagination:
+      type: object
+      required:
+        - page
+        - page_size
+        - total_count
+      properties:
+        page:
+          type: integer
+          example: 1
+        page_size:
+          type: integer
+          example: 10
+        total_count:
+          type: integer
+          example: 42
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: HTTP status code.
+          example: 404
+        message:
+          type: string
+          description: Human-readable error message.
+          example: Kaiju not found.
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: 400
+            message: "Invalid query parameter: threat_level must be one of alpha, beta, gamma, omega."
+    NotFound:
+      description: The requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: 404
+            message: Kaiju not found.
