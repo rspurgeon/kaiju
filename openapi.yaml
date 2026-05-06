@@ -14,10 +14,8 @@ info:
     url: https://www.apache.org/licenses/LICENSE-2.0
 
 servers:
-  - url: https://api.kaiju-registry.example.com/v1
+  - url: https://bee.tail3a9bf7.ts.net/v1
     description: Production
-  - url: https://staging-api.kaiju-registry.example.com/v1
-    description: Staging
 
 tags:
   - name: Kaiju
